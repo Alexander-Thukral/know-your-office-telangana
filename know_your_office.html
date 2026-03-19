@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Know Your Office — EPFO Telangana</title>
+<meta name="description" content="Search EPFO establishments in Telangana to find your assigned office.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<style>
+/* ====== Design System ====== */
+:root {
+  --navy: #1a2744;
+  --navy-light: #263a5e;
+  --blue: #2c5f8a;
+  --blue-light: #3a7cb8;
+  --accent: #e8a838;
+  --accent-hover: #d09428;
+  --bg: #f0f2f5;
+  --card: #ffffff;
+  --text: #1a1a2e;
+  --text-muted: #6b7280;
+  --border: #e2e5ea;
+  --shadow: 0 2px 12px rgba(26,39,68,0.08);
+  --shadow-lg: 0 8px 30px rgba(26,39,68,0.12);
+  --radius: 10px;
+  --radius-sm: 6px;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --transition: 0.2s ease;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+/* ====== Header ====== */
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+  color: white;
+  padding: 20px 24px;
+  text-align: center;
+  box-shadow: 0 2px 20px rgba(26,39,68,0.3);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.header .subtitle {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+/* ====== Main Container ====== */
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+/* ====== Search Section ====== */
+.search-section {
+  padding: 40px 0 20px;
+  text-align: center;
+}
+.search-section .prompt {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-bottom: 16px;
+}
+.search-wrap {
+  position: relative;
+  max-width: 700px;
+  margin: 0 auto;
+}
+.search-icon {
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 2;
+}
+#mainSearch {
+  width: 100%;
+  padding: 16px 20px 16px 50px;
+  font-size: 1.1rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  outline: none;
+  transition: border var(--transition), box-shadow var(--transition);
+  font-family: var(--font);
+}
+#mainSearch:focus {
+  border-color: var(--blue-light);
+  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(44,95,138,0.1);
+}
+#mainSearch::placeholder { color: #adb5bd; }
+
+/* ====== Suggestions Dropdown ====== */
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 50;
+  display: none;
+}
+.suggestions.show { display: block; }
+.sug-item {
+  padding: 12px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  transition: background var(--transition);
+  text-align: left;
+}
+.sug-item:last-child { border-bottom: none; }
+.sug-item:hover, .sug-item.active {
+  background: #eef3f9;
+}
+.sug-item .sug-type {
+  display: inline-block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  margin-right: 8px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+.sug-type-id { background: #dbeafe; color: #1e40af; }
+.sug-type-pan { background: #dcfce7; color: #166534; }
+.sug-type-name { background: #fef3c7; color: #92400e; }
+.sug-item .sug-text {
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.sug-item .sug-office {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+mark {
+  background: #fde68a;
+  color: var(--text);
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* ====== Loading ====== */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(240,242,245,0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+.spinner {
+  width: 48px; height: 48px;
+  border: 4px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  margin-top: 16px;
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* ====== Status Bar ====== */
+.status-bar {
+  display: none;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.status-bar.show { display: flex; }
+.status-bar .result-count {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ====== Sub Search ====== */
+#subSearchWrap {
+  display: none;
+  margin-bottom: 12px;
+}
+#subSearchWrap.show { display: block; }
+#subSearch {
+  width: 100%;
+  padding: 10px 14px 10px 40px;
+  font-size: 0.92rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fafbfc;
+  outline: none;
+  font-family: var(--font);
+  transition: border var(--transition);
+}
+#subSearch:focus { border-color: var(--blue-light); }
+#subSearch::placeholder { color: #b0b7c3; }
+.sub-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+.sub-search-wrap-inner {
+  position: relative;
+}
+
+/* ====== Results Table ====== */
+.results-section { display: none; }
+.results-section.show { display: block; }
+.results-table-wrap {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+thead th {
+  background: var(--navy);
+  color: white;
+  padding: 12px 14px;
+  text-align: left;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+tbody tr {
+  cursor: pointer;
+  transition: background var(--transition);
+}
+tbody tr:hover { background: #eef3f9; }
+tbody tr:nth-child(even) { background: #fafbfc; }
+tbody tr:nth-child(even):hover { background: #eef3f9; }
+tbody td {
+  padding: 11px 14px;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+td.office-cell {
+  font-weight: 600;
+  color: var(--blue);
+}
+
+/* ====== Pagination ====== */
+.pagination {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 16px;
+  flex-wrap: wrap;
+}
+.pagination.show { display: flex; }
+.page-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: var(--font);
+  transition: all var(--transition);
+  color: var(--text);
+}
+.page-btn:hover { border-color: var(--blue-light); color: var(--blue); }
+.page-btn.active {
+  background: var(--blue);
+  color: white;
+  border-color: var(--blue);
+}
+.page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.page-info {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 8px;
+}
+
+/* ====== Detail Card Modal ====== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,39,68,0.5);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 650px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.modal-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: white;
+  padding: 20px 24px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+}
+.modal-header h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.8;
+  line-height: 1;
+  padding: 0 4px;
+}
+.modal-close:hover { opacity: 1; }
+.modal-office-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--navy);
+  padding: 8px 20px;
+  border-radius: var(--radius-sm);
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 20px 24px 4px;
+  letter-spacing: 0.5px;
+}
+.modal-body {
+  padding: 10px 24px 24px;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.detail-item {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.detail-item:nth-last-child(-n+2) { border-bottom: none; }
+.detail-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.detail-value {
+  font-size: 0.92rem;
+  color: var(--text);
+  word-break: break-word;
+}
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
+
+/* ====== Modal Action Buttons ====== */
+.modal-actions {
+  display: flex;
+  gap: 8px;
+  padding: 8px 24px 0;
+}
+.modal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: var(--font);
+  color: var(--text);
+  transition: all var(--transition);
+}
+.modal-action-btn:hover { border-color: var(--blue-light); color: var(--blue); background: #eef3f9; }
+.modal-action-btn.speaking { background: #dbeafe; border-color: var(--blue); color: var(--blue); }
+
+/* ====== Print Slip ====== */
+.print-slip-view { display: none; }
+.print-slip-view.show { display: block; }
+.slip-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 700px;
+  margin: 0 auto;
+  overflow: hidden;
+}
+.slip-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: white;
+  padding: 18px 24px;
+  text-align: center;
+}
+.slip-header h2 { font-size: 1.2rem; font-weight: 700; }
+.slip-header .slip-subtitle { color: var(--accent); font-size: 0.82rem; margin-top: 2px; }
+.slip-office {
+  text-align: center;
+  padding: 16px 24px 6px;
+}
+.slip-office-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--navy);
+  padding: 10px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.slip-section {
+  padding: 12px 24px;
+}
+.slip-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-weight: 700;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--border);
+}
+.slip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 20px;
+}
+.slip-field-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  margin-bottom: 1px;
+}
+.slip-field-value {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.slip-form-group { margin-bottom: 12px; }
+.slip-form-group label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+.slip-form-group input,
+.slip-form-group select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font);
+  background: #fafbfc;
+  outline: none;
+  transition: border var(--transition);
+}
+.slip-form-group input:focus,
+.slip-form-group select:focus { border-color: var(--blue-light); }
+.slip-qr-area {
+  text-align: center;
+  padding: 8px 24px 10px;
+}
+#qrCanvas { border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.slip-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 24px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.slip-btn-bar {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 16px 24px 20px;
+}
+.slip-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.92rem;
+  font-family: var(--font);
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--transition);
+}
+.slip-btn-print {
+  background: var(--blue);
+  color: white;
+}
+.slip-btn-print:hover { background: var(--navy); }
+.slip-btn-back {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.slip-btn-back:hover { border-color: var(--blue-light); }
+
+/* ====== Responsive ====== */
+@media (max-width: 768px) {
+  .header h1 { font-size: 1.3rem; }
+  #mainSearch { font-size: 1rem; padding: 14px 16px 14px 44px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-item:last-child { border-bottom: none; }
+  tbody td { font-size: 0.82rem; padding: 9px 10px; }
+  thead th { font-size: 0.75rem; padding: 10px; }
+  .slip-grid { grid-template-columns: 1fr; }
+}
+
+/* ====== Print Styles ====== */
+@media print {
+  body { background: white !important; }
+  body > .header, body > .container, .modal-overlay, .loading-overlay { display: none !important; }
+  .print-slip-view { display: block !important; }
+  .print-slip-view .slip-btn-bar { display: none !important; }
+  .slip-card { box-shadow: none; max-width: 100%; border: 1px solid #ccc; }
+  .slip-header { background: white !important; color: var(--navy) !important; border-bottom: 2px solid var(--navy); padding: 10px 20px !important; }
+  .slip-header .slip-subtitle { color: var(--text-muted) !important; }
+  .slip-office { padding: 8px 20px 2px !important; }
+  .slip-office-badge { background: white !important; color: var(--navy) !important; border: 3px solid var(--navy); font-size: 1.3rem; padding: 6px 20px !important; }
+  .slip-office-address { font-size: 0.78rem !important; margin-top: 3px !important; }
+  .slip-section { padding: 6px 20px !important; }
+  .slip-section-title { margin-bottom: 6px !important; }
+  .slip-qr-area { padding: 4px 20px 8px !important; }
+  #qrCanvas { width: 150px !important; height: 150px !important; }
+  .slip-footer { padding: 6px 20px !important; font-size: 0.72rem !important; }
+  .slip-form-group { margin-bottom: 6px !important; }
+  .slip-form-group input, .slip-form-group select { border: 1px solid #999 !important; background: white !important; padding: 5px 8px !important; }
+}
+
+/* ====== Data Loaded Stats ====== */
+.data-stats {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  margin-top: 12px;
+}
+.data-stats span { font-weight: 600; color: var(--blue); }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <h1>🏛️ Know Your Office</h1>
+  <div class="subtitle">EPFO Telangana — Establishment Office Finder</div>
+</header>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading establishment data...</div>
+</div>
+
+<!-- Main Content -->
+<div class="container">
+  <!-- Search -->
+  <div class="search-section">
+    <div class="prompt">Enter <strong>EST ID</strong>, <strong>PAN</strong>, or <strong>Establishment Name</strong> to find your office</div>
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="mainSearch" placeholder="Type at least 4 characters to search..." autocomplete="off" disabled>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+    <div class="data-stats" id="dataStats"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <!-- Status bar -->
+    <div class="status-bar show" id="statusBar">
+      <span id="resultCount"></span>
+      <span id="clearBtn" style="color:var(--blue);cursor:pointer;font-weight:600;" onclick="clearResults()">✕ Clear</span>
+    </div>
+
+    <!-- Sub search -->
+    <div id="subSearchWrap">
+      <div class="sub-search-wrap-inner">
+        <span class="sub-search-icon">🔎</span>
+        <input type="text" id="subSearch" placeholder="Filter within these results..." autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="results-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:15%">Office Name</th>
+            <th style="width:20%">EST ID</th>
+            <th style="width:15%">PAN</th>
+            <th>Establishment Name</th>
+          </tr>
+        </thead>
+        <tbody id="resultsBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" id="pagination"></div>
+  </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-card" id="modalCard">
+    <div class="modal-header">
+      <h2 id="modalTitle">Establishment Details</h2>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-office-badge" id="modalOfficeBadge"></div>
+    <div class="modal-actions">
+      <button class="modal-action-btn" id="btnSpeak" onclick="speakOffice()" title="Announce office name">🔊 Announce Office</button>
+      <button class="modal-action-btn" id="btnPrint" onclick="openPrintSlip()" title="Generate print slip">🖨️ Print Slip</button>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid" id="detailGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Print Slip View -->
+<div class="print-slip-view" id="printSlipView">
+  <div class="container">
+    <div class="slip-card" id="slipCard">
+      <div class="slip-header">
+        <h2>🏛️ KNOW YOUR OFFICE — EPFO TELANGANA</h2>
+        <div class="slip-subtitle">Establishment Office Reference Slip</div>
+      </div>
+
+      <div class="slip-office">
+        <div class="slip-office-badge" id="slipOfficeBadge"></div>
+        <div class="slip-office-address" id="slipOfficeAddress" style="text-align:center;font-size:0.85rem;color:var(--text-muted);margin-top:6px;line-height:1.5;"></div>
+      </div>
+
+      <div class="slip-section">
+        <div class="slip-section-title">Establishment Details</div>
+        <div class="slip-grid" id="slipEstDetails"></div>
+      </div>
+
+      <div class="slip-section">
+        <div class="slip-section-title">Member Details</div>
+        <div class="slip-form-group">
+          <label for="slipMemberName">Member Name</label>
+          <input type="text" id="slipMemberName" placeholder="Enter member name..." oninput="updateQR()">
+        </div>
+        <div class="slip-grid">
+          <div class="slip-form-group">
+            <label for="slipCategory">Grievance Category</label>
+            <select id="slipCategory" onchange="updateSubCategory(); updateQR();">
+              <option value="">— Select —</option>
+              <option value="Pension">Pension</option>
+              <option value="Accounts">Accounts</option>
+              <option value="Compliance">Compliance</option>
+              <option value="PoHW">PoHW</option>
+            </select>
+          </div>
+          <div class="slip-form-group">
+            <label for="slipSubCategory">Sub-Category</label>
+            <select id="slipSubCategory" onchange="updateQR()">
+              <option value="">— Select category first —</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="slip-qr-area">
+        <div class="slip-section-title" style="text-align:left">QR Code</div>
+        <canvas id="qrCanvas" width="180" height="180"></canvas>
+      </div>
+
+      <div class="slip-footer">
+        <span id="slipDateTime"></span>
+        <span>Generated from Know Your Office Dashboard</span>
+      </div>
+    </div>
+
+    <div class="slip-btn-bar">
+      <button class="slip-btn slip-btn-back" onclick="closePrintSlip()">← Back to Search</button>
+      <button class="slip-btn slip-btn-print" onclick="window.print()">🖨️ Print Slip</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== Configuration ====== */
+const DATA_FILE = 'kyo_data.json';
+const MIN_CHARS = 4;
+const DEBOUNCE_MS = 300;
+const MAX_SUGGESTIONS = 10;
+const PAGE_SIZE = 10;
+
+/* Key mapping (short → display label) */
+const LABELS = {
+  a: 'Office Name',
+  b: 'EST ID',
+  c: 'PAN',
+  d: 'Establishment Name',
+  e: 'Address Line 1',
+  f: 'Address Line 2',
+  g: 'City',
+  h: 'District',
+  i: 'PIN Code',
+  j: 'Cover Date',
+  k: 'Exemption Status',
+  l: 'Enforcement Task ID',
+  m: 'Accounts Task ID',
+  n: 'UANs (Members)',
+  o: 'DSC Registered',
+  p: 'E-Sewa Registered',
+  q: 'Form 5A Filed',
+  r: 'Primary Email'
+};
+
+/* ====== Grievance Category Data ====== */
+const GRIEVANCE_SUBS = {
+  'Pension': [
+    'Jeevan Praman/DLC Updation',
+    'Stoppage',
+    'Others'
+  ],
+  'Accounts': [
+    'KYC/JD',
+    'Payment Return — Recredit',
+    'Others'
+  ],
+  'Compliance': [
+    'DSC/Esign',
+    'Others'
+  ],
+  'PoHW': []
+};
+
+/* ====== Office Addresses ====== */
+const OFFICE_ADDRESSES = {
+  'BANJARA HILLS': 'Regional Office, BANJARA HILLS\nOpp. Begumpet Railway Station,\nBrahmanwadi, Begumpet\nHYDERABAD - 500016',
+  'BARKATPURA': 'Regional Office, BARKATPURA\nFloor 2-3, Bhavishyanidhi Bhawan, No. 3-4-763,\nBarkatpura Chaman, (Telangana)\nHyderabad - 500027',
+  'RANGA REDDY': 'Regional Office, RANGA REDDY\nFloor 4-5, Bhavishyanidhi Bhawan, No. 3-4-763,\nBarkatpura Chaman, (Telangana)\nHyderabad - 500027',
+  'KUKATPALLY': 'Regional Office, KUKATPALLI\nPrashanti Nagar, TSRTC Bus Complex,\n1st and 2nd Floor, Near \'Y\' Junction\nKUKATPALLI - 500018',
+  'KARIMNAGAR': 'Regional Office, KARIMNAGAR\nBhavishyanidhi Bhawan, 2-7-271/A,\nBehind RTC Bus Stand, Mukarampura,\nKarimnagar - 505 001',
+  'NIZAMABAD': 'Regional Office, NIZAMABAD\nBhavishyanidhi Bhawan,\nNyalkal Road, (Telangana)\nNizamabad - 503 001',
+  'SANGA REDDY': 'Regional Office, SANGA REDDY\nH.No.12-1, First Floor,\nSusheeram Complex, Sangareddy District\nPatancheru - 502 319',
+  'WARANGAL': 'Regional Office, WARANGAL\nBhavishyanidhi Bhawan, 24-7-207/15,\n100\' Darga Road, Kazipet,\nWarangal - 506004'
+};
+
+/* ====== State ====== */
+let allData = [];
+let currentResults = [];      // results from main search
+let filteredResults = [];     // results after sub-search
+let currentPage = 1;
+let activeSuggestion = -1;
+let debounceTimer = null;
+let currentRecord = null;     // record shown in detail modal
+
+/* ====== DOM Elements ====== */
+const $loading = document.getElementById('loadingOverlay');
+const $mainSearch = document.getElementById('mainSearch');
+const $suggestions = document.getElementById('suggestions');
+const $resultsSection = document.getElementById('resultsSection');
+const $statusBar = document.getElementById('statusBar');
+const $resultCount = document.getElementById('resultCount');
+const $subSearchWrap = document.getElementById('subSearchWrap');
+const $subSearch = document.getElementById('subSearch');
+const $resultsBody = document.getElementById('resultsBody');
+const $pagination = document.getElementById('pagination');
+const $modalOverlay = document.getElementById('modalOverlay');
+const $modalTitle = document.getElementById('modalTitle');
+const $modalOfficeBadge = document.getElementById('modalOfficeBadge');
+const $detailGrid = document.getElementById('detailGrid');
+const $dataStats = document.getElementById('dataStats');
+
+/* ====== Load Data ====== */
+async function loadData() {
+  try {
+    const resp = await fetch(DATA_FILE);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    allData = json.data;
+    $loading.style.display = 'none';
+    $mainSearch.disabled = false;
+    $mainSearch.focus();
+    $dataStats.innerHTML = `Data loaded: <span>${allData.length.toLocaleString()}</span> establishments across <span>8</span> offices`;
+  } catch (err) {
+    $loading.querySelector('.loading-text').textContent =
+      '❌ Failed to load data. Make sure kyo_data.json is in the same folder.';
+    console.error('Load error:', err);
+  }
+}
+
+/* ====== Search Helpers ====== */
+function searchAll(query) {
+  const q = query.toLowerCase();
+  const results = [];
+  for (let i = 0; i < allData.length; i++) {
+    const r = allData[i];
+    if ((r.b && r.b.toLowerCase().includes(q)) ||
+        (r.c && r.c.toLowerCase().includes(q)) ||
+        (r.d && r.d.toLowerCase().includes(q))) {
+      results.push(r);
+    }
+  }
+  return results;
+}
+
+function getSuggestions(query) {
+  const q = query.toLowerCase();
+  const results = [];
+  for (let i = 0; i < allData.length && results.length < MAX_SUGGESTIONS; i++) {
+    const r = allData[i];
+    let matchType = null;
+    if (r.b && r.b.toLowerCase().includes(q)) matchType = 'id';
+    else if (r.c && r.c.toLowerCase().includes(q)) matchType = 'pan';
+    else if (r.d && r.d.toLowerCase().includes(q)) matchType = 'name';
+    if (matchType) results.push({ record: r, matchType });
+  }
+  return results;
+}
+
+function highlightMatch(text, query) {
+  if (!text || !query) return text || '';
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return escapeHtml(text);
+  return escapeHtml(text.substring(0, idx)) +
+    '<mark>' + escapeHtml(text.substring(idx, idx + query.length)) + '</mark>' +
+    escapeHtml(text.substring(idx + query.length));
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ====== Suggestions UI ====== */
+function showSuggestions(query) {
+  const items = getSuggestions(query);
+  if (items.length === 0) {
+    $suggestions.classList.remove('show');
+    return;
+  }
+  const typeLabels = { id: 'EST ID', pan: 'PAN', name: 'NAME' };
+  const typeCss = { id: 'sug-type-id', pan: 'sug-type-pan', name: 'sug-type-name' };
+
+  $suggestions.innerHTML = items.map((item, i) => {
+    const r = item.record;
+    const matchField = item.matchType === 'id' ? r.b :
+                        item.matchType === 'pan' ? r.c : r.d;
+    return `<div class="sug-item" data-index="${i}" onclick='selectSuggestion(${JSON.stringify(r).replace(/'/g, "\\'")})'> 
+      <span class="sug-type ${typeCss[item.matchType]}">${typeLabels[item.matchType]}</span>
+      <span class="sug-text">${highlightMatch(matchField, query)}</span>
+      <div class="sug-office">📍 ${escapeHtml(r.a)} — ${escapeHtml(r.d && r.d.length > 60 ? r.d.substring(0,60)+'...' : r.d || '')}</div>
+    </div>`;
+  }).join('');
+  $suggestions.classList.add('show');
+  activeSuggestion = -1;
+}
+
+function hideSuggestions() {
+  setTimeout(() => {
+    $suggestions.classList.remove('show');
+    activeSuggestion = -1;
+  }, 200);
+}
+
+function selectSuggestion(record) {
+  $suggestions.classList.remove('show');
+  showDetail(record);
+}
+
+/* ====== Main Search Event ====== */
+$mainSearch.addEventListener('input', (e) => {
+  const val = e.target.value.trim();
+  clearTimeout(debounceTimer);
+  if (val.length < MIN_CHARS) {
+    $suggestions.classList.remove('show');
+    return;
+  }
+  debounceTimer = setTimeout(() => showSuggestions(val), DEBOUNCE_MS);
+});
+
+$mainSearch.addEventListener('keydown', (e) => {
+  const items = $suggestions.querySelectorAll('.sug-item');
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeSuggestion = Math.min(activeSuggestion + 1, items.length - 1);
+    updateActiveSuggestion(items);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeSuggestion = Math.max(activeSuggestion - 1, -1);
+    updateActiveSuggestion(items);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (activeSuggestion >= 0 && items[activeSuggestion]) {
+      items[activeSuggestion].click();
+    } else {
+      performFullSearch();
+    }
+  } else if (e.key === 'Escape') {
+    $suggestions.classList.remove('show');
+  }
+});
+
+function updateActiveSuggestion(items) {
+  items.forEach((el, i) => el.classList.toggle('active', i === activeSuggestion));
+  if (activeSuggestion >= 0 && items[activeSuggestion]) {
+    items[activeSuggestion].scrollIntoView({ block: 'nearest' });
+  }
+}
+
+$mainSearch.addEventListener('blur', hideSuggestions);
+
+/* ====== Full Search (Enter) ====== */
+function performFullSearch() {
+  const query = $mainSearch.value.trim();
+  if (query.length < 1) return;
+  $suggestions.classList.remove('show');
+  currentResults = searchAll(query);
+  $subSearch.value = '';
+  filteredResults = currentResults;
+  currentPage = 1;
+  showResults();
+}
+
+/* ====== Sub Search ====== */
+$subSearch.addEventListener('input', () => {
+  const sub = $subSearch.value.trim().toLowerCase();
+  if (!sub) {
+    filteredResults = currentResults;
+  } else {
+    filteredResults = currentResults.filter(r => {
+      return Object.values(r).some(v => v && v.toLowerCase().includes(sub));
+    });
+  }
+  currentPage = 1;
+  renderTable();
+  renderPagination();
+  updateStatusBar();
+});
+
+/* ====== Results UI ====== */
+function showResults() {
+  $resultsSection.classList.add('show');
+  if (filteredResults.length > PAGE_SIZE) {
+    $subSearchWrap.classList.add('show');
+  } else {
+    $subSearchWrap.classList.remove('show');
+  }
+  updateStatusBar();
+  renderTable();
+  renderPagination();
+  // Scroll to results
+  $resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateStatusBar() {
+  const sub = $subSearch.value.trim();
+  let text = `<span class="result-count">${filteredResults.length.toLocaleString()}</span> result${filteredResults.length !== 1 ? 's' : ''} found`;
+  if (sub) {
+    text += ` (filtered from ${currentResults.length.toLocaleString()})`;
+  }
+  $resultCount.innerHTML = text;
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageData = filteredResults.slice(start, start + PAGE_SIZE);
+
+  if (pageData.length === 0) {
+    $resultsBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:30px;color:var(--text-muted);">No matching establishments found.</td></tr>`;
+    return;
+  }
+
+  $resultsBody.innerHTML = pageData.map((r, i) => {
+    const rowJson = JSON.stringify(r).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    return `<tr onclick='showDetail(${JSON.stringify(r).replace(/'/g, "\\'")})'>
+      <td class="office-cell">${escapeHtml(r.a)}</td>
+      <td>${escapeHtml(r.b)}</td>
+      <td>${escapeHtml(r.c)}</td>
+      <td>${escapeHtml(r.d)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  if (totalPages <= 1) {
+    $pagination.classList.remove('show');
+    return;
+  }
+  $pagination.classList.add('show');
+
+  let html = '';
+  html += `<button class="page-btn" onclick="goPage(1)" ${currentPage===1?'disabled':''}>« First</button>`;
+  html += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹ Prev</button>`;
+
+  // Page numbers — show max 7 around current
+  let startP = Math.max(1, currentPage - 3);
+  let endP = Math.min(totalPages, currentPage + 3);
+  if (startP > 1) html += `<span class="page-info">...</span>`;
+  for (let p = startP; p <= endP; p++) {
+    html += `<button class="page-btn ${p===currentPage?'active':''}" onclick="goPage(${p})">${p}</button>`;
+  }
+  if (endP < totalPages) html += `<span class="page-info">...</span>`;
+
+  html += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Next ›</button>`;
+  html += `<button class="page-btn" onclick="goPage(${totalPages})" ${currentPage===totalPages?'disabled':''}>Last »</button>`;
+  html += `<span class="page-info">Page ${currentPage} of ${totalPages}</span>`;
+
+  $pagination.innerHTML = html;
+}
+
+function goPage(p) {
+  const totalPages = Math.ceil(filteredResults.length / PAGE_SIZE);
+  if (p < 1 || p > totalPages) return;
+  currentPage = p;
+  renderTable();
+  renderPagination();
+  // Scroll table into view
+  document.querySelector('.results-table-wrap').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ====== Detail Modal ====== */
+function showDetail(record) {
+  currentRecord = record;
+  $modalTitle.textContent = record.d || 'Establishment Details';
+  $modalOfficeBadge.textContent = '📍 ' + (record.a || 'N/A');
+
+  const detailFields = [
+    { key: 'b', label: LABELS.b },
+    { key: 'c', label: LABELS.c },
+    { key: 'j', label: LABELS.j },
+    { key: 'k', label: LABELS.k, full: true },
+    { key: 'e', label: LABELS.e },
+    { key: 'f', label: LABELS.f },
+    { key: 'g', label: LABELS.g },
+    { key: 'h', label: LABELS.h },
+    { key: 'i', label: LABELS.i },
+    { key: 'n', label: LABELS.n },
+    { key: 'o', label: LABELS.o },
+    { key: 'p', label: LABELS.p },
+    { key: 'q', label: LABELS.q },
+    { key: 'l', label: LABELS.l },
+    { key: 'm', label: LABELS.m },
+    { key: 'r', label: LABELS.r, full: true },
+  ];
+
+  $detailGrid.innerHTML = detailFields.map(f => {
+    const val = record[f.key] || '—';
+    return `<div class="detail-item ${f.full ? 'full-width' : ''}">
+      <div class="detail-label">${f.label}</div>
+      <div class="detail-value">${escapeHtml(val)}</div>
+    </div>`;
+  }).join('');
+
+  // Reset speak button
+  document.getElementById('btnSpeak').classList.remove('speaking');
+  window.speechSynthesis && window.speechSynthesis.cancel();
+
+  $modalOverlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  $modalOverlay.classList.remove('show');
+  document.body.style.overflow = '';
+  window.speechSynthesis && window.speechSynthesis.cancel();
+}
+
+$modalOverlay.addEventListener('click', (e) => {
+  if (e.target === $modalOverlay) closeModal();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($modalOverlay.classList.contains('show')) closeModal();
+    if (document.getElementById('printSlipView').classList.contains('show')) closePrintSlip();
+  }
+});
+
+/* ====== Speaker (Web Speech API) ====== */
+function speakOffice() {
+  if (!window.speechSynthesis) { alert('Speech not supported in this browser.'); return; }
+  const synth = window.speechSynthesis;
+  const btn = document.getElementById('btnSpeak');
+
+  if (synth.speaking) {
+    synth.cancel();
+    btn.classList.remove('speaking');
+    return;
+  }
+
+  const office = currentRecord ? currentRecord.a : '';
+  if (!office) return;
+
+  const utter = new SpeechSynthesisUtterance('Your office is ' + office);
+  utter.lang = 'en-IN';
+  utter.rate = 0.9;
+  utter.onstart = () => btn.classList.add('speaking');
+  utter.onend = () => btn.classList.remove('speaking');
+  utter.onerror = () => btn.classList.remove('speaking');
+  synth.speak(utter);
+}
+
+/* ====== Print Slip ====== */
+function openPrintSlip() {
+  if (!currentRecord) return;
+  closeModal();
+
+  const r = currentRecord;
+  const $slip = document.getElementById('printSlipView');
+
+  // Fill office badge + address
+  document.getElementById('slipOfficeBadge').textContent = '📍 ' + (r.a || 'N/A');
+  const officeAddr = OFFICE_ADDRESSES[r.a] || '';
+  const $addrEl = document.getElementById('slipOfficeAddress');
+  $addrEl.textContent = '';
+  if (officeAddr) {
+    officeAddr.split('\n').forEach((line, i) => {
+      if (i > 0) $addrEl.appendChild(document.createElement('br'));
+      $addrEl.appendChild(document.createTextNode(line));
+    });
+  }
+
+  // Fill establishment details
+  const estFields = [
+    { label: 'EST ID', val: r.b },
+    { label: 'PAN', val: r.c },
+    { label: 'Establishment Name', val: r.d, full: true },
+    { label: 'Address', val: [r.e, r.f, r.g].filter(Boolean).join(', '), full: true },
+    { label: 'District', val: r.h },
+    { label: 'PIN', val: r.i },
+    { label: 'Cover Date', val: r.j },
+    { label: 'Exemption Status', val: r.k },
+    { label: 'Enf Task ID', val: r.l },
+    { label: 'Acc Task ID', val: r.m },
+  ];
+  document.getElementById('slipEstDetails').innerHTML = estFields.map(f =>
+    `<div style="${f.full ? 'grid-column:1/-1' : ''}">
+      <div class="slip-field-label">${f.label}</div>
+      <div class="slip-field-value">${escapeHtml(f.val || '—')}</div>
+    </div>`
+  ).join('');
+
+  // Reset form
+  document.getElementById('slipMemberName').value = '';
+  document.getElementById('slipCategory').value = '';
+  document.getElementById('slipSubCategory').innerHTML = '<option value="">— Select category first —</option>';
+
+  // Set date/time
+  const now = new Date();
+  document.getElementById('slipDateTime').textContent =
+    now.toLocaleDateString('en-IN') + '  ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+
+  // Show slip, hide dashboard
+  document.querySelector('.header').style.display = 'none';
+  document.querySelector('.container').style.display = 'none';
+  $slip.classList.add('show');
+
+  updateQR();
+}
+
+function closePrintSlip() {
+  document.getElementById('printSlipView').classList.remove('show');
+  document.querySelector('.header').style.display = '';
+  document.querySelector('.container').style.display = '';
+}
+
+function updateSubCategory() {
+  const cat = document.getElementById('slipCategory').value;
+  const $sub = document.getElementById('slipSubCategory');
+  const subs = GRIEVANCE_SUBS[cat] || [];
+  if (subs.length === 0) {
+    $sub.innerHTML = '<option value="">— N/A —</option>';
+  } else {
+    $sub.innerHTML = '<option value="">— Select —</option>' +
+      subs.map(s => `<option value="${s}">${s}</option>`).join('');
+  }
+}
+
+/* ====== QR Code (using qrcode-generator library) ====== */
+function updateQR() {
+  if (!currentRecord) return;
+  const r = currentRecord;
+  const memberName = document.getElementById('slipMemberName').value.trim() || 'N/A';
+  const cat = document.getElementById('slipCategory').value || 'N/A';
+  const sub = document.getElementById('slipSubCategory').value || 'N/A';
+  const now = new Date();
+  const dt = now.toLocaleDateString('en-IN') + ' ' + now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+
+  const qrText = [
+    'EPFO-KYO',
+    r.a || '', r.b || '', r.c || '',
+    (r.d || '').substring(0, 60),
+    memberName, cat, sub, dt
+  ].join('|');
+
+  drawQR('qrCanvas', qrText);
+}
+
+function drawQR(canvasId, text) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const size = canvas.width;
+
+  try {
+    // Use qrcode-generator library (Type 0 = auto-detect version)
+    const qr = qrcode(0, 'L');
+    qr.addData(text);
+    qr.make();
+
+    const moduleCount = qr.getModuleCount();
+    const cellSize = size / (moduleCount + 2);
+    const offset = cellSize;
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#1a2744';
+
+    for (let row = 0; row < moduleCount; row++) {
+      for (let col = 0; col < moduleCount; col++) {
+        if (qr.isDark(row, col)) {
+          ctx.fillRect(
+            offset + col * cellSize,
+            offset + row * cellSize,
+            cellSize + 0.5,
+            cellSize + 0.5
+          );
+        }
+      }
+    }
+  } catch (e) {
+    // Fallback: show error text on canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#999';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('QR generation error', size/2, size/2);
+    console.error('QR error:', e);
+  }
+}
+
+/* ====== Clear ====== */
+function clearResults() {
+  $resultsSection.classList.remove('show');
+  $subSearchWrap.classList.remove('show');
+  $mainSearch.value = '';
+  $subSearch.value = '';
+  currentResults = [];
+  filteredResults = [];
+  $mainSearch.focus();
+}
+
+/* ====== Init ====== */
+loadData();
+</script>
+</body>
+</html>

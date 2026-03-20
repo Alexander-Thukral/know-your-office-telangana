@@ -717,6 +717,10 @@ td.office-cell {
           <label for="slipMemberName">Member Name</label>
           <input type="text" id="slipMemberName" placeholder="Enter member name..." oninput="updateQR()">
         </div>
+        <div class="slip-form-group">
+          <label for="slipMemberId">Member ID (Estb 15 digits + Member 7 digits)</label>
+          <input type="text" id="slipMemberId" placeholder="e.g. APHYD384502400012345678" maxlength="22" oninput="updateQR()">
+        </div>
         <div class="slip-grid">
           <div class="slip-form-group">
             <label for="slipCategory">Grievance Category</label>
@@ -726,6 +730,7 @@ td.office-cell {
               <option value="Accounts">Accounts</option>
               <option value="Compliance">Compliance</option>
               <option value="PoHW">PoHW</option>
+              <option value="Others">Others</option>
             </select>
           </div>
           <div class="slip-form-group">
@@ -801,7 +806,8 @@ const GRIEVANCE_SUBS = {
     'DSC/Esign',
     'Others'
   ],
-  'PoHW': []
+  'PoHW': [],
+  'Others': []
 };
 
 /* ====== Office Addresses ====== */
@@ -1216,6 +1222,7 @@ function openPrintSlip() {
 
   // Reset form
   document.getElementById('slipMemberName').value = '';
+  document.getElementById('slipMemberId').value = '';
   document.getElementById('slipCategory').value = '';
   document.getElementById('slipSubCategory').innerHTML = '<option value="">— Select category first —</option>';
 
@@ -1255,6 +1262,7 @@ function updateQR() {
   if (!currentRecord) return;
   const r = currentRecord;
   const memberName = document.getElementById('slipMemberName').value.trim() || 'N/A';
+  const memberId = document.getElementById('slipMemberId').value.trim() || 'N/A';
   const cat = document.getElementById('slipCategory').value || 'N/A';
   const sub = document.getElementById('slipSubCategory').value || 'N/A';
   const now = new Date();
@@ -1264,7 +1272,7 @@ function updateQR() {
     'EPFO-KYO',
     r.a || '', r.b || '', r.c || '',
     (r.d || '').substring(0, 60),
-    memberName, cat, sub, dt
+    memberName, memberId, cat, sub, dt
   ].join('|');
 
   drawQR('qrCanvas', qrText);

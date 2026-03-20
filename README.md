@@ -41,6 +41,7 @@ A high-performance, standalone search dashboard for Telangana EPFO counter staff
 2. Upload to GitHub.
 3. Connect the repo to **Vercel** for automatic hosting.
 4. Access `/admin.html` to keep your data fresh every month.
+5. Your main dashboard is at `/index.html` (or your root URL).
 
 ---
 *Developed for EPFO Telangana Regional Offices.*

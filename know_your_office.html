@@ -1472,7 +1472,8 @@ function clearResults() {
     <div class="visitors-header">
       <h2>📋 Today's Visitors — <span id="visitorDate"></span></h2>
       <div class="visitors-actions">
-        <button onclick="exportVisitorsCSV()">📥 Export CSV</button>
+        <button onclick="exportVisitorsCSV()">📥 Export Today (CSV)</button>
+        <button onclick="exportAllHistoryCSV()" style="background:var(--accent); color:var(--navy); font-weight:700;">💾 Backup ALL History (CSV)</button>
         <button onclick="closeVisitors()">✕ Close</button>
       </div>
     </div>
@@ -1638,23 +1639,39 @@ document.getElementById('visitorsPanel').addEventListener('click', (e) => {
   if (e.target.id === 'visitorsPanel') closeVisitors();
 });
 
-/* Export CSV */
+/* Export CSV Functions */
 function exportVisitorsCSV() {
   getTodayVisits((visits) => {
-    if (visits.length === 0) { alert('No records to export.'); return; }
-    const headers = ['#','Time','Office','EST ID','PAN','Est Name','Member Name','Member ID','Category','Sub-Category'];
-    const rows = visits.map((v, i) =>
-      [i+1, v.time, v.office, v.estId, v.pan, '"'+v.estName.replace(/"/g,'""')+'"', v.memberName, v.memberId, v.category, v.subCategory].join(',')
-    );
-    const csv = headers.join(',') + '\n' + rows.join('\n');
-    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'KYO_Visitors_' + todayStr() + '.csv';
-    a.click();
-    URL.revokeObjectURL(url);
+    if (visits.length === 0) { alert('No records to export for today.'); return; }
+    generateAndDownloadCSV(visits, 'KYO_Visitors_Today_' + todayStr() + '.csv');
   });
+}
+
+function exportAllHistoryCSV() {
+  if (!visitorDB) { alert('Database not ready.'); return; }
+  const tx = visitorDB.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  const req = store.getAll();
+  req.onsuccess = () => {
+    const visits = req.result || [];
+    if (visits.length === 0) { alert('No history found.'); return; }
+    generateAndDownloadCSV(visits, 'KYO_Visitors_Full_History.csv');
+  };
+}
+
+function generateAndDownloadCSV(visits, filename) {
+  const headers = ['#','Date','Time','Office','EST ID','PAN','Est Name','Member Name','Member ID','Category','Sub-Category'];
+  const rows = visits.map((v, i) =>
+    [i+1, v.date, v.time, v.office, v.estId, v.pan, '"'+v.estName.replace(/"/g,'""')+'"', v.memberName, v.memberId, v.category, v.subCategory].join(',')
+  );
+  const csv = headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /* ====== Final Initialization ====== */

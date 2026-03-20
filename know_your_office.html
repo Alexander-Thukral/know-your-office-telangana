@@ -1460,9 +1460,7 @@ function clearResults() {
   $mainSearch.focus();
 }
 
-/* ====== Init ====== */
-loadData();
-initVisitorDB();
+/* Load data is now moved to the end of the file after all functions are defined */
 </script>
 
 <!-- Today's Visitors Button -->
@@ -1502,7 +1500,7 @@ initVisitorDB();
 /* ====== IndexedDB Visitor Tracking ====== */
 let visitorDB = null;
 const DB_NAME = 'KYO_VisitorLog';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'visits';
 
 function initVisitorDB() {
@@ -1546,15 +1544,23 @@ function logVisit(record, callback) {
     subCategory: document.getElementById('slipSubCategory').value || '',
   };
   const tx = visitorDB.transaction(STORE_NAME, 'readwrite');
-  tx.objectStore(STORE_NAME).add(visit);
-  
-  tx.oncomplete = () => {
+  const store = tx.objectStore(STORE_NAME);
+  const req = store.add(visit);
+
+  req.onsuccess = () => {
+    console.log('Visit logged successfully');
     updateVisitorCount();
     if (callback) callback();
   };
-  tx.onerror = (e) => {
-    console.error('Visit log error:', e);
+  req.onerror = (e) => {
+    console.error('Add visit request error:', e.target.error);
     if (callback) callback();
+  };
+  tx.oncomplete = () => {
+    console.log('Transaction complete');
+  };
+  tx.onerror = (e) => {
+    console.error('Transaction error:', e.target.error);
   };
 }
 
@@ -1650,6 +1656,13 @@ function exportVisitorsCSV() {
     URL.revokeObjectURL(url);
   });
 }
+
+/* ====== Final Initialization ====== */
+// Called at the very end to ensure all functions (like initVisitorDB) are defined
+loadData();
+initVisitorDB();
+
+console.log('KYO Dashboard Initialized. Check "Today\'s Visitors" at the bottom right.');
 </script>
 </body>
 </html>

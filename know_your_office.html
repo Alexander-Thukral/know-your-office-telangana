@@ -609,6 +609,105 @@ td.office-cell {
   margin-top: 12px;
 }
 .data-stats span { font-weight: 600; color: var(--blue); }
+
+/* ====== Visitors Panel ====== */
+.visitors-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--navy);
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 30px;
+  font-size: 0.88rem;
+  font-family: var(--font);
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition);
+}
+.visitors-btn:hover { background: var(--blue); transform: translateY(-2px); }
+.visitors-btn .badge {
+  background: var(--accent);
+  color: var(--navy);
+  padding: 1px 7px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.visitors-panel {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,39,68,0.5);
+  z-index: 250;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.visitors-panel.show { display: flex; }
+.visitors-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 900px;
+  width: 100%;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: modalIn 0.25s ease;
+}
+.visitors-header {
+  background: linear-gradient(135deg, var(--navy), var(--navy-light));
+  color: white;
+  padding: 16px 24px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.visitors-header h2 { font-size: 1.05rem; font-weight: 600; }
+.visitors-actions { display: flex; gap: 8px; align-items: center; }
+.visitors-actions button {
+  padding: 6px 14px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: white;
+  font-size: 0.82rem;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.visitors-actions button:hover { background: rgba(255,255,255,0.1); }
+.visitors-body {
+  overflow-y: auto;
+  flex: 1;
+}
+.visitors-body table { width: 100%; }
+.visitors-body thead th {
+  position: sticky;
+  top: 0;
+  background: var(--navy);
+  color: white;
+  padding: 10px 12px;
+  font-size: 0.75rem;
+}
+.visitors-body tbody td {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid var(--border);
+}
+.visitors-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+}
+@media print { .visitors-btn, .visitors-panel { display: none !important; } }
 </style>
 </head>
 <body>
@@ -755,7 +854,7 @@ td.office-cell {
 
     <div class="slip-btn-bar">
       <button class="slip-btn slip-btn-back" onclick="closePrintSlip()">← Back to Search</button>
-      <button class="slip-btn slip-btn-print" onclick="window.print()">🖨️ Print Slip</button>
+      <button class="slip-btn slip-btn-print" onclick="printAndLog()">🖨️ Print Slip</button>
     </div>
   </div>
 </div>
@@ -1335,6 +1434,163 @@ function clearResults() {
 
 /* ====== Init ====== */
 loadData();
+initVisitorDB();
+</script>
+
+<!-- Today's Visitors Button -->
+<button class="visitors-btn" id="visitorsBtn" onclick="showVisitors()">📋 Today's Visitors <span class="badge" id="visitorCount">0</span></button>
+
+<!-- Visitors Panel -->
+<div class="visitors-panel" id="visitorsPanel">
+  <div class="visitors-card">
+    <div class="visitors-header">
+      <h2>📋 Today's Visitors — <span id="visitorDate"></span></h2>
+      <div class="visitors-actions">
+        <button onclick="exportVisitorsCSV()">📥 Export CSV</button>
+        <button onclick="closeVisitors()">✕ Close</button>
+      </div>
+    </div>
+    <div class="visitors-body">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Time</th>
+            <th>Office</th>
+            <th>EST ID</th>
+            <th>Member Name</th>
+            <th>Member ID</th>
+            <th>Category</th>
+            <th>Sub-Category</th>
+          </tr>
+        </thead>
+        <tbody id="visitorsBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ====== IndexedDB Visitor Tracking ====== */
+let visitorDB = null;
+const DB_NAME = 'KYO_VisitorLog';
+const DB_VERSION = 1;
+const STORE_NAME = 'visits';
+
+function initVisitorDB() {
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+  request.onupgradeneeded = (e) => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains(STORE_NAME)) {
+      const store = db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      store.createIndex('date', 'date', { unique: false });
+    }
+  };
+  request.onsuccess = (e) => {
+    visitorDB = e.target.result;
+    updateVisitorCount();
+  };
+  request.onerror = (e) => console.error('IndexedDB error:', e);
+}
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function logVisit(record) {
+  if (!visitorDB || !record) return;
+  const now = new Date();
+  const visit = {
+    date: todayStr(),
+    time: now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'}),
+    timestamp: now.toISOString(),
+    office: record.a || '',
+    estId: record.b || '',
+    pan: record.c || '',
+    estName: record.d || '',
+    memberName: document.getElementById('slipMemberName').value.trim() || '',
+    memberId: document.getElementById('slipMemberId').value.trim() || '',
+    category: document.getElementById('slipCategory').value || '',
+    subCategory: document.getElementById('slipSubCategory').value || '',
+  };
+  const tx = visitorDB.transaction(STORE_NAME, 'readwrite');
+  tx.objectStore(STORE_NAME).add(visit);
+  tx.oncomplete = () => updateVisitorCount();
+}
+
+function getTodayVisits(callback) {
+  if (!visitorDB) { callback([]); return; }
+  const tx = visitorDB.transaction(STORE_NAME, 'readonly');
+  const idx = tx.objectStore(STORE_NAME).index('date');
+  const req = idx.getAll(todayStr());
+  req.onsuccess = () => callback(req.result || []);
+  req.onerror = () => callback([]);
+}
+
+function updateVisitorCount() {
+  getTodayVisits((visits) => {
+    document.getElementById('visitorCount').textContent = visits.length;
+  });
+}
+
+/* Print and Log */
+function printAndLog() {
+  logVisit(currentRecord);
+  window.print();
+}
+
+/* Show Visitors Panel */
+function showVisitors() {
+  document.getElementById('visitorDate').textContent = new Date().toLocaleDateString('en-IN', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  getTodayVisits((visits) => {
+    const $body = document.getElementById('visitorsBody');
+    if (visits.length === 0) {
+      $body.innerHTML = '<tr><td colspan="8" class="visitors-empty">No visitors recorded today.</td></tr>';
+    } else {
+      $body.innerHTML = visits.map((v, i) =>
+        `<tr>
+          <td>${i+1}</td>
+          <td>${v.time}</td>
+          <td style="font-weight:600;color:var(--blue)">${v.office}</td>
+          <td>${v.estId}</td>
+          <td>${v.memberName || '—'}</td>
+          <td>${v.memberId || '—'}</td>
+          <td>${v.category || '—'}</td>
+          <td>${v.subCategory || '—'}</td>
+        </tr>`
+      ).join('');
+    }
+  });
+  document.getElementById('visitorsPanel').classList.add('show');
+}
+
+function closeVisitors() {
+  document.getElementById('visitorsPanel').classList.remove('show');
+}
+
+document.getElementById('visitorsPanel').addEventListener('click', (e) => {
+  if (e.target.id === 'visitorsPanel') closeVisitors();
+});
+
+/* Export CSV */
+function exportVisitorsCSV() {
+  getTodayVisits((visits) => {
+    if (visits.length === 0) { alert('No records to export.'); return; }
+    const headers = ['#','Time','Office','EST ID','PAN','Est Name','Member Name','Member ID','Category','Sub-Category'];
+    const rows = visits.map((v, i) =>
+      [i+1, v.time, v.office, v.estId, v.pan, '"'+v.estName.replace(/"/g,'""')+'"', v.memberName, v.memberId, v.category, v.subCategory].join(',')
+    );
+    const csv = headers.join(',') + '\n' + rows.join('\n');
+    const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'KYO_Visitors_' + todayStr() + '.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
 </script>
 </body>
 </html>

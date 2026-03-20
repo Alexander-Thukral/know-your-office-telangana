@@ -124,6 +124,10 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
       <div class="step" id="step3">3. Push to GitHub</div>
     </div>
     <div class="card-title">📄 Upload New CSV</div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">
+      💡 The system automatically identifies required columns (EST_ID, OFFICE NAME, PAN, etc.). 
+      <strong>Extra columns</strong> in your backend CSV will be safely ignored.
+    </p>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
       <div class="icon">📂</div>
       <div class="label">Click or drag to upload TELANGANA_MSTR_*.csv</div>
@@ -207,18 +211,31 @@ function handleFile(file) {
       // Remove junk rows (header duplicates, empty)
       const clean = raw.filter(r => r['EST_ID'] && r['EST_ID'] !== 'EST_ID');
 
-      // Check columns
-      const missing = EXPECTED_COLS.filter(c => !(c in (clean[0] || {})));
+      // Case-insensitive header mapping
+      const headers = Object.keys(clean[0] || {});
+      const headerMap = {}; // mapping of our required key -> actual CSV header
+      const missing = [];
+
+      for (const requiredKey of EXPECTED_COLS) {
+        const actualHeader = headers.find(h => h.trim().toUpperCase() === requiredKey.toUpperCase());
+        if (actualHeader) {
+          headerMap[requiredKey] = actualHeader;
+        } else {
+          missing.push(requiredKey);
+        }
+      }
+
       if (missing.length > 0) {
-        showStatus($status, `❌ Missing columns: ${missing.join(', ')}`, 'error');
+        showStatus($status, `❌ Missing required columns: ${missing.join(', ')}`, 'error');
         return;
       }
 
-      // Convert to compact format
+      // Convert to compact format using the discovered headers
       parsedData = clean.map(row => {
         const obj = {};
         for (const [full, short] of Object.entries(KEY_MAP)) {
-          obj[short] = (row[full] || '').trim().replace(/^(nan|None|NaN)$/i, '');
+          const actualHeader = headerMap[full];
+          obj[short] = (row[actualHeader] || '').trim().replace(/^(nan|None|NaN)$/i, '');
         }
         return obj;
       });

@@ -87,19 +87,23 @@ def preprocess(csv_path):
     if removed:
         print(f"🧹 Removed {removed} junk/empty rows")
 
+    # Normalize headers: strip and uppercase for robust matching
+    df.columns = [c.strip().upper() for c in df.columns]
+
+    missing = set(EXPECTED_COLUMNS) - set(df.columns)
+    if missing:
+        print(f"❌ Error: Missing required columns: {missing}")
+        return False
+
     # Clean text: strip whitespace, replace NaN placeholders with empty string
     for col in df.columns:
         df[col] = df[col].astype(str).str.strip()
         df[col] = df[col].replace({"nan": "", "None": "", "NaN": ""})
 
-    missing = set(EXPECTED_COLUMNS) - set(df.columns)
-    if missing:
-        print(f"⚠️  Warning: Missing columns: {missing}")
-
     final_rows = len(df)
     print(f"✅ Clean rows: {final_rows:,}")
 
-    # Rename columns to short keys for compact JSON
+    # Rename columns to short keys for compact JSON (only picking required columns)
     df_compact = df[EXPECTED_COLUMNS].rename(columns=KEY_MAP)
 
     # Build JSON: { "keys": {short: long, ...}, "data": [{...}, ...] }

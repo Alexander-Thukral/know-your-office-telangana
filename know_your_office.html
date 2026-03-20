@@ -817,8 +817,12 @@ td.office-cell {
           <input type="text" id="slipMemberName" placeholder="Enter member name..." oninput="updateQR()">
         </div>
         <div class="slip-form-group">
-          <label for="slipMemberId">Member ID (Estb 15 digits + Member 7 digits)</label>
-          <input type="text" id="slipMemberId" placeholder="e.g. APHYD384502400012345678" maxlength="22" oninput="updateQR()">
+          <label for="slipMemberIdPart">Member ID</label>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <span id="slipMemberIdPrefix" style="font-family:monospace; background:#f0f2f5; padding:8px 12px; border:1px solid var(--border); border-radius:4px; font-weight:600; color:var(--navy); font-size:0.9rem;"></span>
+            <input type="text" id="slipMemberIdPart" placeholder="7 digits" maxlength="7" oninput="validateMemberIdPart(this); updateQR();" onblur="padMemberIdPart(this); updateQR();" style="flex:1; font-family:monospace; font-size:0.9rem;">
+          </div>
+          <div id="memberIdError" style="color:var(--red); font-size:0.75rem; margin-top:4px; display:none;">Please enter exactly 7 digits (numeric)</div>
         </div>
         <div class="slip-grid">
           <div class="slip-form-group">
@@ -1321,7 +1325,9 @@ function openPrintSlip() {
 
   // Reset form
   document.getElementById('slipMemberName').value = '';
-  document.getElementById('slipMemberId').value = '';
+  document.getElementById('slipMemberIdPrefix').textContent = r.b || '';
+  document.getElementById('slipMemberIdPart').value = '';
+  document.getElementById('memberIdError').style.display = 'none';
   document.getElementById('slipCategory').value = '';
   document.getElementById('slipSubCategory').innerHTML = '<option value="">— Select category first —</option>';
 
@@ -1361,7 +1367,10 @@ function updateQR() {
   if (!currentRecord) return;
   const r = currentRecord;
   const memberName = document.getElementById('slipMemberName').value.trim() || 'N/A';
-  const memberId = document.getElementById('slipMemberId').value.trim() || 'N/A';
+  const memberIdPrefix = document.getElementById('slipMemberIdPrefix').textContent;
+  const memberIdPart = document.getElementById('slipMemberIdPart').value.trim();
+  const fullMemberId = memberIdPart.length === 7 ? memberIdPrefix + memberIdPart : 'N/A';
+  
   const cat = document.getElementById('slipCategory').value || 'N/A';
   const sub = document.getElementById('slipSubCategory').value || 'N/A';
   const now = new Date();
@@ -1371,10 +1380,29 @@ function updateQR() {
     'EPFO-KYO',
     r.a || '', r.b || '', r.c || '',
     (r.d || '').substring(0, 60),
-    memberName, memberId, cat, sub, dt
+    memberName, fullMemberId, cat, sub, dt
   ].join('|');
 
   drawQR('qrCanvas', qrText);
+}
+
+function validateMemberIdPart(el) {
+  const val = el.value.replace(/\D/g, ''); // Only digits
+  el.value = val;
+  const $err = document.getElementById('memberIdError');
+  if (val.length > 0 && val.length < 7) {
+    $err.style.display = 'block';
+  } else {
+    $err.style.display = 'none';
+  }
+}
+
+function padMemberIdPart(el) {
+  let val = el.value.replace(/\D/g, '');
+  if (val.length > 0 && val.length < 7) {
+    el.value = val.padStart(7, '0');
+    document.getElementById('memberIdError').style.display = 'none';
+  }
 }
 
 function drawQR(canvasId, text) {
@@ -1498,8 +1526,11 @@ function todayStr() {
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 
-function logVisit(record) {
-  if (!visitorDB || !record) return;
+function logVisit(record, callback) {
+  if (!visitorDB || !record) {
+    if (callback) callback();
+    return;
+  }
   const now = new Date();
   const visit = {
     date: todayStr(),
@@ -1510,13 +1541,21 @@ function logVisit(record) {
     pan: record.c || '',
     estName: record.d || '',
     memberName: document.getElementById('slipMemberName').value.trim() || '',
-    memberId: document.getElementById('slipMemberId').value.trim() || '',
+    memberId: document.getElementById('slipMemberIdPrefix').textContent + document.getElementById('slipMemberIdPart').value.trim(),
     category: document.getElementById('slipCategory').value || '',
     subCategory: document.getElementById('slipSubCategory').value || '',
   };
   const tx = visitorDB.transaction(STORE_NAME, 'readwrite');
   tx.objectStore(STORE_NAME).add(visit);
-  tx.oncomplete = () => updateVisitorCount();
+  
+  tx.oncomplete = () => {
+    updateVisitorCount();
+    if (callback) callback();
+  };
+  tx.onerror = (e) => {
+    console.error('Visit log error:', e);
+    if (callback) callback();
+  };
 }
 
 function getTodayVisits(callback) {
@@ -1534,10 +1573,30 @@ function updateVisitorCount() {
   });
 }
 
-/* Print and Log */
+/* Print and Log with Validation */
 function printAndLog() {
-  logVisit(currentRecord);
-  window.print();
+  const record = currentRecord;
+  if (!record) return;
+
+  const name = document.getElementById('slipMemberName').value.trim();
+  const idPart = document.getElementById('slipMemberIdPart').value.trim();
+  const category = document.getElementById('slipCategory').value;
+
+  if (!name || !idPart || !category) {
+    alert('Please fill in all mandatory fields: Member Name, Member ID (7 digits), and Grievance Category.');
+    return;
+  }
+
+  if (idPart.length < 7) {
+    const paddedId = idPart.padStart(7, '0');
+    document.getElementById('slipMemberIdPart').value = paddedId;
+    updateQR();
+  }
+
+  // Use a small delay or callback to ensure DB commit before print dialog blocks
+  logVisit(record, () => {
+    window.print();
+  });
 }
 
 /* Show Visitors Panel */

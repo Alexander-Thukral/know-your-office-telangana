@@ -143,12 +143,30 @@ body { font-family: var(--font); background: var(--bg); color: var(--text); min-
     <div class="status" id="uploadStatus"></div>
   </div>
 
+  <!-- Step 3: System Settings -->
+  <div class="upload-card" id="settingsCard" style="display:none;">
+    <div class="card-title">⚙️ System Configuration</div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:12px;">
+      Update the <strong>Access Code</strong> required to view the main dashboard. 
+      Changes take effect immediately for new sessions.
+    </p>
+    <div class="form-group">
+      <label>Dashboard Access Code</label>
+      <input type="text" id="newAccessCode" placeholder="Loading current code...">
+    </div>
+    <button class="btn btn-primary" id="saveConfigBtn" onclick="updateConfig()">
+      💾 Update Access Code
+    </button>
+    <div class="status" id="settingsStatus"></div>
+  </div>
+
   <a href="index.html" class="back-link">← Back to Dashboard</a>
 </div>
 
 <script>
 /* ====== Config ====== */
 const JSON_FILE = 'kyo_data.json';
+const CONFIG_FILE = 'config.json';
 const BRANCH = 'main';
 
 // Same key mapping as preprocess_data.py
@@ -189,6 +207,8 @@ async function authenticate() {
     showStatus($status, `✅ Authenticated! Repo: ${data.full_name}`, 'success');
     document.getElementById('authCard').style.display = 'none';
     document.getElementById('uploadCard').style.display = 'block';
+    document.getElementById('settingsCard').style.display = 'block';
+    fetchCurrentConfig();
   } catch (err) {
     showStatus($status, `❌ ${err.message}`, 'error');
   }
@@ -347,6 +367,76 @@ async function processAndPush() {
 function showStatus(el, msg, type) {
   el.textContent = msg;
   el.className = `status show ${type}`;
+}
+
+/* ====== Config Management ====== */
+async function fetchCurrentConfig() {
+  const $input = document.getElementById('newAccessCode');
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${ghRepo}/contents/${CONFIG_FILE}?ref=${BRANCH}`, {
+      headers: { 'Authorization': `Bearer ${ghToken}` }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      // decode base64
+      const content = decodeURIComponent(escape(atob(data.content)));
+      const config = JSON.parse(content);
+      $input.value = config.access_code || '';
+    }
+  } catch (err) {
+    console.error('Failed to fetch config:', err);
+  }
+}
+
+async function updateConfig() {
+  const newCode = document.getElementById('newAccessCode').value.trim();
+  if (!newCode) { alert('Please enter a code.'); return; }
+  
+  const $status = document.getElementById('settingsStatus');
+  const $btn = document.getElementById('saveConfigBtn');
+  $btn.disabled = true;
+  showStatus($status, '⏳ Updating configuration...', 'info');
+
+  try {
+    // Get current file SHA
+    const fileResp = await fetch(`https://api.github.com/repos/${ghRepo}/contents/${CONFIG_FILE}?ref=${BRANCH}`, {
+      headers: { 'Authorization': `Bearer ${ghToken}` }
+    });
+
+    let sha = null;
+    if (fileResp.ok) {
+      const fileData = await fileResp.json();
+      sha = fileData.sha;
+    }
+
+    const config = { access_code: newCode };
+    const jsonStr = JSON.stringify(config, null, 2);
+    const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+
+    const body = {
+      message: `Update dashboard access code`,
+      content: encoded,
+      branch: BRANCH
+    };
+    if (sha) body.sha = sha;
+
+    const pushResp = await fetch(`https://api.github.com/repos/${ghRepo}/contents/${CONFIG_FILE}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${ghToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!pushResp.ok) throw new Error('Failed to update config on GitHub');
+    
+    showStatus($status, '✅ Access Code updated! Content will refresh globally in ~1 min.', 'success');
+  } catch (err) {
+    showStatus($status, `❌ Error: ${err.message}`, 'error');
+  } finally {
+    $btn.disabled = false;
+  }
 }
 </script>
 </body>

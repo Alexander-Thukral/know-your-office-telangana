@@ -707,10 +707,85 @@ td.office-cell {
   padding: 40px;
   color: var(--text-muted);
 }
-@media print { .visitors-btn, .visitors-panel { display: none !important; } }
+  @media print { .visitors-btn, .visitors-panel { display: none !important; } }
+
+  /* ====== Login Overlay ====== */
+  .login-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+  }
+  .login-card {
+    background: var(--card);
+    padding: 40px 30px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    max-width: 400px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    animation: loginIn 0.5s ease-out;
+  }
+  @keyframes loginIn {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .login-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 5px;
+    background: var(--accent);
+  }
+  .login-logo { font-size: 3rem; margin-bottom: 16px; display: block; }
+  .login-title { font-size: 1.4rem; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+  .login-subtitle { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.4; }
+  .login-form-group { text-align: left; margin-bottom: 16px; }
+  .login-form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+  .login-input {
+    width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    font-size: 1rem; outline: none; transition: all var(--transition); background: #fafbfc;
+  }
+  .login-input:focus { border-color: var(--blue); background: white; box-shadow: 0 0 0 3px rgba(44,95,138,0.1); }
+  .login-btn {
+    width: 100%; padding: 12px; background: var(--blue); color: white; border: none;
+    border-radius: var(--radius-sm); font-size: 1rem; font-weight: 600; cursor: pointer;
+    transition: all var(--transition); margin-top: 8px;
+  }
+  .login-btn:hover { background: var(--navy); transform: translateY(-1px); }
+  .login-error { color: var(--red); font-size: 0.82rem; margin-top: 14px; background: #fee2e2; padding: 8px; border-radius: 4px; display: none; }
+  
+  .login-overlay.hidden { 
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
 </style>
 </head>
 <body>
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <span class="login-logo">🏛️</span>
+    <h2 class="login-title">Know Your Office</h2>
+    <p class="login-subtitle">Dashboard Access Restricted.<br>Please enter the access code to continue.</p>
+    
+    <div class="login-form-group">
+      <label for="accessCode">Access Code</label>
+      <input type="password" id="accessCode" class="login-input" placeholder="Enter Access Code..." autocomplete="off">
+    </div>
+    
+    <button class="login-btn" onclick="submitLogin()">Unlock Dashboard</button>
+    <div class="login-error" id="loginError">❌ Invalid Access Code. Please try again.</div>
+  </div>
+</div>
 
 <!-- Header -->
 <header class="header">
@@ -864,6 +939,55 @@ td.office-cell {
 </div>
 
 <script>
+/* ====== Authentication ====== */
+const CONFIG_FILE = 'config.json';
+const SESSION_KEY = 'kyo_authorized';
+let dynamicAccessCode = 'KYO@2026'; // Fallback
+
+async function checkAuth() {
+  // 1. Fetch latest config from server
+  try {
+    const resp = await fetch(CONFIG_FILE + '?t=' + Date.now()); // Prevent caching
+    if (resp.ok) {
+      const config = await resp.json();
+      if (config.access_code) dynamicAccessCode = config.access_code;
+    }
+  } catch (err) {
+    console.warn('Could not fetch dynamic config, using fallback.');
+  }
+
+  // 2. Check local session
+  const isAuth = localStorage.getItem(SESSION_KEY);
+  if (isAuth === 'true') {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    startApp();
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    document.getElementById('accessCode').focus();
+  }
+}
+
+function submitLogin() {
+  const input = document.getElementById('accessCode').value.trim();
+  const $error = document.getElementById('loginError');
+  
+  if (input === dynamicAccessCode) {
+    localStorage.setItem(SESSION_KEY, 'true');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    $error.style.display = 'none';
+    startApp();
+  } else {
+    $error.style.display = 'block';
+    document.getElementById('accessCode').value = '';
+    document.getElementById('accessCode').focus();
+  }
+}
+
+// Handle Enter key on login
+document.getElementById('accessCode')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') submitLogin();
+});
+
 /* ====== Configuration ====== */
 const DATA_FILE = 'kyo_data.json';
 const MIN_CHARS = 4;
@@ -1675,11 +1799,15 @@ function generateAndDownloadCSV(visits, filename) {
 }
 
 /* ====== Final Initialization ====== */
-// Called at the very end to ensure all functions (like initVisitorDB) are defined
-loadData();
-initVisitorDB();
+function startApp() {
+  loadData();
+  initVisitorDB();
+}
 
-console.log('KYO Dashboard Initialized. Check "Today\'s Visitors" at the bottom right.');
+// Initial check when script loads
+checkAuth();
+
+console.log('KYO Dashboard Initialized. Authentication checked.');
 </script>
 </body>
 </html>

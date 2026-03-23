@@ -581,24 +581,125 @@ td.office-cell {
 }
 
 /* ====== Print Styles ====== */
+
+/* --- Enforce A4 single page across ALL browsers and OS --- */
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
 @media print {
-  body { background: white !important; }
-  body > .header, body > .container, .modal-overlay, .loading-overlay { display: none !important; }
-  .print-slip-view { display: block !important; }
-  .print-slip-view .slip-btn-bar { display: none !important; }
-  .slip-card { box-shadow: none; max-width: 100%; border: 1px solid #ccc; }
-  .slip-header { background: white !important; color: var(--navy) !important; border-bottom: 2px solid var(--navy); padding: 10px 20px !important; }
-  .slip-header .slip-subtitle { color: var(--text-muted) !important; }
-  .slip-office { padding: 8px 20px 2px !important; }
-  .slip-office-badge { background: white !important; color: var(--navy) !important; border: 3px solid var(--navy); font-size: 1.3rem; padding: 6px 20px !important; }
-  .slip-office-address { font-size: 0.78rem !important; margin-top: 3px !important; }
-  .slip-section { padding: 6px 20px !important; }
-  .slip-section-title { margin-bottom: 6px !important; }
-  .slip-qr-area { padding: 4px 20px 8px !important; }
-  #qrCanvas { width: 150px !important; height: 150px !important; }
-  .slip-footer { padding: 6px 20px !important; font-size: 0.72rem !important; }
-  .slip-form-group { margin-bottom: 6px !important; }
-  .slip-form-group input, .slip-form-group select { border: 1px solid #999 !important; background: white !important; padding: 5px 8px !important; }
+  /* Reset everything to white */
+  html, body {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: hidden !important;
+  }
+
+  /* Hide all UI elements except the slip */
+  body > .header,
+  body > .container,
+  .modal-overlay,
+  .loading-overlay,
+  .visitors-btn,
+  .visitors-panel,
+  .login-overlay {
+    display: none !important;
+  }
+
+  /* Show slip view occupying the full page */
+  .print-slip-view {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+
+  /* Container inside slip view: no extra padding */
+  .print-slip-view > .container {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Hide the action buttons */
+  .print-slip-view .slip-btn-bar {
+    display: none !important;
+  }
+
+  /* Scale the slip card slightly to guarantee it fits within A4 content area.
+     A4 with 8mm margins = ~194mm wide.
+     scale(0.90) gives ~10% breathing room for Windows Chrome/Edge which
+     render form controls and fonts slightly larger than Mac/Chrome. */
+  .slip-card {
+    box-shadow: none !important;
+    border: 1px solid #bbb !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    transform: scale(0.90) !important;
+    transform-origin: top left !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Header: strip gradient, use border */
+  .slip-header {
+    background: white !important;
+    color: var(--navy) !important;
+    border-bottom: 2px solid var(--navy) !important;
+    padding: 8px 18px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .slip-header h2 { font-size: 1rem !important; }
+  .slip-header .slip-subtitle { color: #555 !important; font-size: 0.75rem !important; }
+
+  /* Office section */
+  .slip-office { padding: 6px 18px 2px !important; }
+  .slip-office-badge {
+    background: white !important;
+    color: var(--navy) !important;
+    border: 2px solid var(--navy) !important;
+    font-size: 1.1rem !important;
+    padding: 5px 16px !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .slip-office-address { font-size: 0.75rem !important; margin-top: 3px !important; }
+
+  /* Content sections */
+  .slip-section { padding: 5px 18px !important; }
+  .slip-section-title { margin-bottom: 5px !important; font-size: 0.68rem !important; }
+
+  /* Fields */
+  .slip-field-label { font-size: 0.65rem !important; }
+  .slip-field-value { font-size: 0.82rem !important; }
+  .slip-form-group { margin-bottom: 5px !important; }
+  .slip-form-group label { font-size: 0.68rem !important; }
+  .slip-form-group input,
+  .slip-form-group select {
+    border: 1px solid #999 !important;
+    background: white !important;
+    padding: 4px 7px !important;
+    font-size: 0.82rem !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* QR code area: place it side-by-side with content to save vertical space */
+  .slip-qr-area { padding: 4px 18px 6px !important; }
+  #qrCanvas { width: 130px !important; height: 130px !important; }
+
+  /* Footer */
+  .slip-footer { padding: 5px 18px !important; font-size: 0.68rem !important; }
 }
 
 /* ====== Data Loaded Stats ====== */
